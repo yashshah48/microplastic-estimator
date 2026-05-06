@@ -400,7 +400,7 @@ with adv2:
     k_pu = st.number_input("k — PU (yr⁻¹)", value=float(k_pu), format="%.4f")
     pu_cf = st.number_input("CF — PU (CTUe/g)", value=float(pu_cf), format="%e")
 with adv3:
-    k_peo = st.number_input("k — PEO (yr⁻¹)", value=float(k_peo), format="%.4f")
+    k_peo = st.number_input("k — PEO (yr⁻¹)", value=float(k_peo), format="%e")
     peo_cf = st.number_input("CF — PEO (CTUe/g)", value=float(peo_cf), format="%e")
 
 # ==========================================================
