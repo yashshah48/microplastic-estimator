@@ -257,8 +257,9 @@ st.markdown("""
 <div class="info-strip">
   <p>
     This tool estimates long-term accumulation and ecotoxicity of polymer seed coatings in agricultural soils,
-    comparing <strong style="color:#012169;">Styrene Butadiene Rubber (SBR)</strong> against
-    <strong style="color:#012169;">Polyurethane (PU)</strong> across multi-year simulation horizons.
+    comparing <strong style="color:#012169;">Styrene Butadiene Rubber (SBR)</strong>,
+    <strong style="color:#012169;">Polyurethane (PU)</strong>, and
+    <strong style="color:#012169;">Polyethylene Oxide (PEO)</strong> across multi-year simulation horizons.
     Configure your parameters below and run the simulation to generate results and export data.
   </p>
 </div>
@@ -269,8 +270,10 @@ st.markdown("""
 # ==========================================================
 sbr_cf = 1.46E-01
 pu_cf  = 4.82E-06
+peo_cf = 8.03E-05
 k_sbr  = 0.0026
 k_pu   = 25.9
+k_peo  = 9.42E-04
 
 # ==========================================================
 # SECTION 1 — Simulation Settings
@@ -389,15 +392,16 @@ with col2:
 st.markdown('<div class="sec"><span class="num">04</span><h2>Advanced Parameters</h2><div class="rule"></div></div>', unsafe_allow_html=True)
 st.markdown('<div class="adv-box"><span class="adv-label">Polymer Degradation Constants</span></div>', unsafe_allow_html=True)
 
-adv1, adv2, adv3, adv4 = st.columns(4, gap="medium")
+adv1, adv2, adv3 = st.columns(3, gap="medium")
 with adv1:
     k_sbr = st.number_input("k — SBR (yr⁻¹)", value=0.0026, format="%.4f")
-with adv2:
     sbr_cf = st.number_input("CF — SBR (CTUe/g)", value=float(sbr_cf), format="%e")
-with adv3:
+with adv2:
     k_pu = st.number_input("k — PU (yr⁻¹)", value=float(k_pu), format="%.4f")
-with adv4:
     pu_cf = st.number_input("CF — PU (CTUe/g)", value=float(pu_cf), format="%e")
+with adv3:
+    k_peo = st.number_input("k — PEO (yr⁻¹)", value=float(k_peo), format="%.4f")
+    peo_cf = st.number_input("CF — PEO (CTUe/g)", value=float(peo_cf), format="%e")
 
 # ==========================================================
 # Run button
@@ -436,14 +440,18 @@ if run:
 
     mass_sbr   = accumulation(k_sbr, annual_input_g, t)
     mass_pu    = accumulation(k_pu,  annual_input_g, t)
+    mass_peo   = accumulation(k_peo, annual_input_g, t)
     impact_sbr = mass_sbr * sbr_cf
     impact_pu  = mass_pu  * pu_cf
+    impact_peo = mass_peo * peo_cf
 
     steady_sbr = (np.inf if np.isclose(k_sbr, 0) else annual_input_g / (1 - np.exp(-k_sbr)))
     steady_pu  = (np.inf if np.isclose(k_pu,  0) else annual_input_g / (1 - np.exp(-k_pu)))
+    steady_peo = (np.inf if np.isclose(k_peo, 0) else annual_input_g / (1 - np.exp(-k_peo)))
 
     total_impact_sbr = np.sum(impact_sbr)
     total_impact_pu  = np.sum(impact_pu)
+    total_impact_peo = np.sum(impact_peo)
     reduction_mass_kg = (steady_sbr - steady_pu) / 1000
     reduction_toxicity_percent = (
         (total_impact_sbr - total_impact_pu) / total_impact_sbr * 100
@@ -473,6 +481,7 @@ if run:
           <span class="ttl">Plastic in Soil at Equilibrium</span>
           <div class="mi"><span class="k">SBR accumulation</span><span class="v">{steady_sbr/1000:,.2f} kg</span></div>
           <div class="mi"><span class="k">PU accumulation</span><span class="vb">{steady_pu/1000:,.2f} kg</span></div>
+          <div class="mi"><span class="k">PEO accumulation</span><span class="vg">{steady_peo/1000:,.2f} kg</span></div>
         </div>""", unsafe_allow_html=True)
 
     with rc3:
@@ -491,6 +500,7 @@ if run:
     GRID  = "#dce3ec"
     SBR_C = "#b5893a"
     PU_C  = "#0071c5"
+    PEO_C = "#1a8c5c"
 
     def style_ax(ax, title, xlabel, ylabel):
         ax.set_facecolor("#ffffff")
@@ -513,6 +523,7 @@ if run:
         fig1, ax1 = plt.subplots(figsize=(6.2, 3.8))
         ax1.plot(t, mass_sbr, color=SBR_C, linewidth=2.2, label="SBR", solid_capstyle="round")
         ax1.plot(t, mass_pu,  color=PU_C,  linewidth=2.2, label="PU",  solid_capstyle="round")
+        ax1.plot(t, mass_peo, color=PEO_C, linewidth=2.2, label="PEO", solid_capstyle="round")
         ax1.fill_between(t, mass_sbr, mass_pu, alpha=0.10, color=SBR_C)
         style_ax(ax1, "Plastic Accumulation Over Time", "Time (years)", "Plastic Mass in Soil (g)")
         plt.tight_layout()
@@ -522,6 +533,7 @@ if run:
         fig2, ax2 = plt.subplots(figsize=(6.2, 3.8))
         ax2.plot(t, impact_sbr, color=SBR_C, linewidth=2.2, label="SBR", solid_capstyle="round")
         ax2.plot(t, impact_pu,  color=PU_C,  linewidth=2.2, label="PU",  solid_capstyle="round")
+        ax2.plot(t, impact_peo, color=PEO_C, linewidth=2.2, label="PEO", solid_capstyle="round")
         ax2.fill_between(t, impact_sbr, impact_pu, alpha=0.10, color=SBR_C)
         style_ax(ax2, "Soil Ecotoxicity Over Time", "Time (years)", "Ecotoxicity (CTUe)")
         plt.tight_layout()
@@ -534,8 +546,10 @@ if run:
         "Year":            t,
         "Mass_SBR_g":      mass_sbr,
         "Mass_PU_g":       mass_pu,
+        "Mass_PEO_g":      mass_peo,
         "Impact_SBR_CTUe": impact_sbr,
-        "Impact_PU_CTUe":  impact_pu
+        "Impact_PU_CTUe":  impact_pu,
+        "Impact_PEO_CTUe": impact_peo
     })
     st.dataframe(results_df, use_container_width=True)
 
@@ -552,13 +566,14 @@ if run:
             "Metric": [
                 "Total seeds per year", "Total seed mass per year (kg)",
                 "Annual polymer input (kg)", "Steady-state SBR mass (kg)",
-                "Steady-state PU mass (kg)", "Total impact SBR",
-                "Total impact PU", "Reduction in mass (kg)", "Reduction in ecotoxicity (%)"
+                "Steady-state PU mass (kg)", "Steady-state PEO mass (kg)",
+                "Total impact SBR", "Total impact PU", "Total impact PEO",
+                "Reduction in mass (kg)", "Reduction in ecotoxicity (%)"
             ],
             "Value": [
                 seeds_display, total_seed_mass_g / 1000, annual_input_g / 1000,
-                steady_sbr / 1000, steady_pu / 1000,
-                total_impact_sbr, total_impact_pu,
+                steady_sbr / 1000, steady_pu / 1000, steady_peo / 1000,
+                total_impact_sbr, total_impact_pu, total_impact_peo,
                 reduction_mass_kg, reduction_toxicity_percent
             ]
         })
